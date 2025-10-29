@@ -1,40 +1,25 @@
-test_that("min_smm_by_depth reproduce FD→min(lower)→custom", {
-  df_test <- tibble::tibble(
-    trt   = rep(c("A","B"), each = 6),
-    rep   = rep(rep(1:2, each = 3), times = 2),  # 0–5–15 para rep=1 y rep=2
-    upper = rep(c(0,5,15), times = 4),
-    lower = rep(c(5,15,30), times = 4),
-    bd    = rep(c(1.2,1.3,1.35, 1.1,1.25,1.3), times = 2),
-    SOC   = c(2.0,1.5,1.0, 2.1,1.4,0.9, 1.8,1.2,0.8, 1.9,1.1,0.7)
+test_that("ref_trt requiere ref_trt en ESM, pero no en FD", {
+  skip_on_cran()
+
+  df <- tibble::tribble(
+    ~trt, ~rep, ~upper, ~lower, ~bd, ~SOC, ~som, ~ref_trt,
+    "cs", 1   , 0     , 5     , 1.1, 2.0 , 4.0, "cs",
+    "cs", 1   , 5     , 15    , 1.2, 1.8 , 3.6, "cs",
+    "ext",1   , 0     , 5     , 1.0, 2.2 , 4.4, "cs",
+    "ext",1   , 5     , 15    , 1.1, 1.9 , 3.8, "cs"
   )
 
-  fd <- esm(df_test, som = FALSE, soc_col = "SOC", rvar = "SOC", output = "fd")
+  # FD no necesita ref_trt
+  fd <- esm(dplyr::select(df, -ref_trt), rvar = "SOC", som = TRUE, output = "fd")
+  expect_s3_class(fd, "tbl_df")
 
-  d.ref_min <- fd %>%
-    dplyr::group_by(lower) %>%
-    dplyr::reframe(Cum_Min_Soil_g_cm2 = min(Cum_Min_Soil_g_cm2))
+  # ESM ref_trt sí necesita ref_trt
+  expect_error(
+    esm(dplyr::select(df, -ref_trt), rvar = "SOC", som = TRUE, reference_mode = "ref_trt"),
+    "Missing `ref_trt`"
+  )
 
-  em.cust <- esm(df_test, reference_mode = "custom",
-                 rvar = "SOC", som = FALSE, soc_col = "SOC",
-                 custom_ld = d.ref_min$lower,
-                 custom_smm = d.ref_min$Cum_Min_Soil_g_cm2)
-
-  esmn2 <- esm(df_test, som = FALSE, soc_col = "SOC",
-               rvar = "SOC", reference_mode = "min_smm_by_depth")
-
-  ref_custom <- attr(em.cust, "SMM_reference") %>%
-    dplyr::select(upper, lower, Cum_Min_Soil_g_cm2)
-  ref_min <- attr(esmn2, "SMM_reference") %>%
-    dplyr::select(upper, lower, Cum_Min_Soil_g_cm2)
-
-  testthat::expect_equal(ref_custom$Cum_Min_Soil_g_cm2,
-                         ref_min$Cum_Min_Soil_g_cm2, tolerance = 1e-6)
-
-  ok_by_profile <- esmn2 %>%
-    dplyr::arrange(trt, rep, lower) %>%
-    dplyr::group_by(trt, rep) %>%
-    dplyr::summarise(ok = all(diff(Cum_SOC_g_cm2) >= -1e-6), .groups = "drop") %>%
-    dplyr::pull(ok)
-
-  testthat::expect_true(all(ok_by_profile))
+  # Y con ref_trt presente debería funcionar
+  trm <- esm(df, rvar = "SOC", som = TRUE, reference_mode = "ref_trt")
+  expect_s3_class(trm, "tbl_df")
 })

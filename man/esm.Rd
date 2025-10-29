@@ -11,58 +11,55 @@ esm(
   soc_col = NULL,
   min_core_length_cm = 0,
   output = c("esm", "fd"),
-  reference_mode = c("treatment_mean", "min_smm_by_depth", "custom"),
+  reference_mode = c("ref_trt", "min", "custom", "min_smm_by_depth"),
   custom_ld = NULL,
   custom_smm = NULL,
   extrapolation = c("none", "to_depth"),
-  reference_by = NULL
+  reference_by = NULL,
+  core_by = NULL,
+  ...
 )
 }
 \arguments{
-\item{data}{Data frame with: \code{trt}, \code{rep}, \code{upper}, \code{lower}, \code{bd}, and \code{rvar}.
-Optionally \code{som} (if \code{som = TRUE}) or a SOC column named in \code{soc_col} (if \code{som = FALSE}).
-\code{ref_trt} is only required when \code{output = "esm"} and
-\code{reference_mode = "treatment_mean"}.}
+\item{data}{Data frame with at least: \code{trt}, \code{rep}, \code{upper}, \code{lower}, \code{bd}, and the column named in \code{rvar}.
+If \code{som = TRUE}, also requires a \code{som} column.}
 
 \item{rvar}{String. Name of the response variable column (percent).}
 
-\item{som}{Logical. If \code{TRUE}, use provided \code{som} column; if \code{FALSE}, estimate
-SOM as \code{2 * SOC} using the column named in \code{soc_col}. Default: \code{TRUE}.}
+\item{som}{Logical. If \code{TRUE}, use provided \code{som} column; if \code{FALSE}, estimate SOM as \code{2 * SOC} using \code{soc_col}. Default \code{TRUE}.}
 
-\item{soc_col}{String or \code{NULL}. Required when \code{som = FALSE}. Name of SOC (\%) column.}
+\item{soc_col}{String or \code{NULL}. Required when \code{som = FALSE}. Name of SOC (\%) column used to estimate SOM.}
 
-\item{min_core_length_cm}{Numeric. Minimum core length (cm). Default 0.}
+\item{min_core_length_cm}{Numeric. Minimum core length (cm). Default \code{0}.}
 
-\item{output}{"esm" (default) or "fd".}
+\item{output}{\code{"esm"} (default) or \code{"fd"}.}
 
-\item{reference_mode}{"treatment_mean" (default), "min_smm_by_depth", or "custom".}
+\item{reference_mode}{\code{"ref_trt"}, \code{"min"}, or \code{"custom"}.
+Backward compatible alias: \code{"min_smm_by_depth"} → \code{"min"}.}
 
-\item{custom_ld, custom_smm}{Custom reference grid when \code{reference_mode = "custom"}.}
+\item{custom_ld, custom_smm}{Custom reference grid when \code{reference_mode = "custom"}.
+\code{custom_ld} must be strictly increasing; both vectors must have equal length.}
 
-\item{extrapolation}{"none" (default) or "to_depth".}
+\item{extrapolation}{\code{"none"} (default) or \code{"to_depth"}.
+\itemize{
+\item \code{"none"}: never extrapolate beyond the maximum \emph{sampled mineral mass} of each profile.
+\item \code{"to_depth"}: allow extrapolation up to the maximum \emph{sampled depth} (lower) of each profile.
+}}
 
-\item{reference_by}{Optional character vector of column names to build the
-reference grid by group (e.g., "Site", or c("Site","yr")).}
+\item{reference_by}{Optional character vector of columns that define groups \strong{over which the reference is computed}.
+If \code{NULL}, \code{"min"} reference is global by depth (entire dataset).}
+
+\item{core_by}{Optional character vector of columns that identify \strong{unique cores/profiles} in addition to \code{trt} and \code{rep}
+(e.g., \code{"Site"}, \code{"Plot"}, \code{"Block"}). If \code{NULL}, only \code{trt + rep} identify a core.}
+
+\item{...}{Ignored. Accepts legacy \code{group_by} for backward compatibility (mapped to \code{reference_by}).}
 }
 \value{
-Tibble with per-interval and cumulative outputs (always with \code{bd} in lowercase).
-For \code{output="esm"}, the attribute \code{"SMM_reference"} contains the SMM target grid used
-(including \code{reference_by} columns if provided).
+A tibble with per-interval and cumulative outputs. Column \code{bd} is always lowercase.
+For \code{output="esm"}, the attribute \code{"SMM_reference"} contains the reference grid used.
 }
 \description{
 Computes per-interval and cumulative quantities for a response variable
-(e.g., \%C, \%N, pH) using the Equivalent Soil Mass (ESM) approach, or
-at Fixed Depth (FD).
-}
-\details{
-Expected units:
-\itemize{
-\item \code{upper}, \code{lower}: cm
-\item \code{bd}: g cm^-3 (lowercase). If your data has \code{BD}, it is mapped to \code{bd}.
-\item \code{som}: percent by mass (\%) when \code{som = TRUE}.
-\item When \code{som = FALSE}, you must provide \code{soc_col} (percent by mass, \%), and
-SOM is estimated as \code{2 * SOC}.
-\item \code{rvar}: percent by mass (\%) if elemental concentration; non-additive props
-(e.g., pH) are re-interpolated onto the SMM grid (no "pH stock").
-}
+(e.g., \\%C, \\%N, pH expressed as \%) using the Equivalent Soil Mass (ESM)
+approach, or returns Fixed-Depth (FD) quantities.
 }

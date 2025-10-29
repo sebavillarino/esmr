@@ -1,0 +1,20 @@
+Package: esmr
+Title: Equivalent Soil Mass Tools for Soil Stocks and Properties
+Version: 0.0.0.9000
+Authors@R: 
+    person("Sebastian", "Villarino", , "sebavillarino@gmail.com", role = c("aut", "cre"))
+Description: Functions to compute fixed-depth and equivalent soil mass
+    (ESM) statistics for SOC and other soil properties with
+    monotone-spline alignment and no-extrapolation options.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Language: en
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Imports: 
+    dplyr,
+    stats
+Suggests: 
+    testthat (>= 3.0.0),
+    tibble
+Config/testthat/edition: 3
